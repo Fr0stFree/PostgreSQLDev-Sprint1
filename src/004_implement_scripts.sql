@@ -1,8 +1,8 @@
 -- 1. Напишите запрос, который выведет процент моделей машин, у которых нет параметра gasoline_consumption.
 SELECT
-    ROUND(COUNT(gc.consumption)::NUMERIC / COUNT(c.model), 2) * 100 AS nulls_percentage_gasoline_consumption
-FROM cars AS c
-LEFT JOIN gasoline_consumption AS gc ON gc.car_id = c.id;
+    (1 - ROUND(COUNT(gc.consumption)::NUMERIC / COUNT(c.model), 2)) * 100 AS nulls_percentage_gasoline_consumption
+FROM car_shop.cars AS c
+LEFT JOIN car_shop.gasoline_consumption AS gc ON gc.car_id = c.id;
 
 -- 2. Напишите запрос, который покажет название бренда и среднюю цену его автомобилей в разбивке по всем
 -- годам с учётом скидки. Итоговый результат отсортируйте по названию бренда и году в восходящем порядке.
@@ -11,9 +11,9 @@ SELECT
     b.name,
     EXTRACT(YEAR FROM p.purchased_at) AS year_sold,
     ROUND(AVG(p.cost), 2) AS average_cost
-FROM brands AS b
-JOIN cars AS c ON b.id = c.brand_id
-JOIN purchases AS p ON p.car_id = c.id
+FROM car_shop.brands AS b
+JOIN car_shop.cars AS c ON b.id = c.brand_id
+JOIN car_shop.purchases AS p ON p.car_id = c.id
 GROUP BY b.name, year_sold
 ORDER BY b.name ASC, year_sold ASC;
 
@@ -24,8 +24,8 @@ SELECT
     EXTRACT(MONTH FROM p.purchased_at) AS month,
     EXTRACT(YEAR FROM p.purchased_at) AS year,
     ROUND(AVG(p.cost), 2) AS average_cost
-FROM cars AS c
-JOIN purchases AS p ON c.id = p.car_id
+FROM car_shop.cars AS c
+JOIN car_shop.purchases AS p ON c.id = p.car_id
 WHERE EXTRACT(YEAR FROM p.purchased_at) = 2022
 GROUP BY month, year
 ORDER BY month ASC;
@@ -37,27 +37,27 @@ ORDER BY month ASC;
 SELECT
     cu.name,
     STRING_AGG(CONCAT(b.name, ' ', c.model), ', ')
-FROM customers AS cu
-JOIN purchases AS p ON p.customer_id = cu.id
-JOIN cars AS c ON p.car_id = c.id
-JOIN brands AS b ON b.id = c.brand_id
+FROM car_shop.customers AS cu
+JOIN car_shop.purchases AS p ON p.customer_id = cu.id
+JOIN car_shop.cars AS c ON p.car_id = c.id
+JOIN car_shop.brands AS b ON b.id = c.brand_id
 GROUP BY cu.name
 ORDER BY cu.name;
 
 -- 5. Напишите запрос, который вернёт самую большую и самую маленькую цену продажи автомобиля
 -- с разбивкой по стране без учёта скидки. Цена в колонке price дана с учётом скидки.
 SELECT
-    b.origin AS brand_origin,
+    co.name AS brand_origin,
     MAX(ROUND(cost / (1 - discount::REAL/100)::NUMERIC, 2)) AS price_max,
     MIN(ROUND(cost / (1 - discount::REAL/100)::NUMERIC, 2)) AS price_min
-FROM purchases AS p
-JOIN cars AS c ON c.id = p.car_id
-JOIN brands AS b ON b.id = c.brand_id
-WHERE b.origin IS NOT NULL
+FROM car_shop.purchases AS p
+JOIN car_shop.cars AS c ON c.id = p.car_id
+JOIN car_shop.brands AS b ON b.id = c.brand_id
+JOIN car_shop.countries AS co ON co.id = b.country_id
 GROUP BY brand_origin;
 
 -- 6. Напишите запрос, который покажет количество всех пользователей из США.
 -- Это пользователи, у которых номер телефона начинается на +1.
 SELECT COUNT(*) AS persons_from_usa_count
-FROM customers
+FROM car_shop.customers
 WHERE phone LIKE '+1%';
